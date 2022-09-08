@@ -6,7 +6,7 @@ from diagrams.aws.security import IdentityAndAccessManagementIamRole
 from diagrams.aws.management import Cloudwatch
 
 
-with Diagram("terraform-aws-stackx-worker", outformat="png", filename="screenshot1", show=True):
+with Diagram("terraform-aws-stackx-worker", outformat="png", filename="screenshot1", show=False):
     with Cluster("EKS"):
 
       eks = ElasticKubernetesService("EKS")
