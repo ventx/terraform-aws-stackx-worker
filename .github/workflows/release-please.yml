@@ -6,8 +6,9 @@ on:
       - main
 
 permissions:
-  id-token: write
   contents: write
+  id-token: write
+  pull-requests: write
 
 jobs:
   release-please:
@@ -15,23 +16,39 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      AWS_DEFAULT_REGION: eu-central-1
+      ARM_CLIENT_ID: "${{ secrets.AZURE_CLIENT_ID }}"
+      ARM_SKIP_PROVIDER_REGISTRATION: true
+      ARM_SUBSCRIPTION_ID: "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+      ARM_TENANT_ID: "${{ secrets.AZURE_TENANT_ID }}"
+      ARM_USE_OIDC: true
       TFDIR: .
+      TF_VAR_rg_name: github-oidc
       TF_VAR_subnet_ids: '["test"]'
-      TF_VAR_workspace_name: rover
       TFVER: 1.1.2 # Rover uses Terraform 1.1.2, so we need to use the same version for the plan file
     steps:
+      - name: Generate token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        if: startsWith(github.repository, 'ventx/terraform-aws-')
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-region: ${{ env.AWS_DEFAULT_REGION }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
           role-to-assume: ${{ secrets.AWS_GH_OIDC }}
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v1
+        uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: ${{ env.TFVER }}
 
@@ -84,15 +101,26 @@ jobs:
           terraform: 'true'
 
       - name: terraform-docs
-        uses: terraform-docs/gh-actions@v1.0.0
+        uses: terraform-docs/gh-actions@v1
+
+      - name: Fix .git owner # Fixes: https://github.com/terraform-docs/gh-actions/issues/90#issuecomment-1231312948
+        run: sudo chown runner:docker -R .git
+
+      - name: Commit files
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "ventx-bot"
+          git status --porcelain
+          git add .
+          git commit -m "[skip ci] Update README.md and terraform-docs"
+
+      - name: Push changes
+        uses: ad-m/github-push-action@master
         with:
-          working-dir: .
-          output-file: README.md
-          output-method: inject
-          git-push: 'true'
+          github_token: ${{ steps.app-token.outputs.token }}
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: release-please
         uses: google-github-actions/release-please-action@v3
