@@ -34,9 +34,3 @@ output "release_version" {
   description = "EKS Managed Node Group release version"
   value       = aws_eks_node_group.worker.release_version
 }
-
-output "release_version_latest" {
-  description = "Latest available AMI release version"
-  value       = data.aws_ssm_parameter.eks_ami_release_version.value
-}
-
