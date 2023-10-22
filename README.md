@@ -1,46 +1,339 @@
-# stackx-template-terraform
+<h1 align="center">
+  <a href="https://github.com/ventx/terraform-aws-stackx-worker">
+    <!-- Please provide path to your logo here -->
+    <img src="https://raw.githubusercontent.com/ventx/terraform-aws-stackx-worker/main/docs/images/logo.svg" alt="Logo" width="100" height="100">
+  </a>
+</h1>
 
-Template repository for Terraform used by all our stackx GitHub repositories.
+<div align="center">
+  ventx/terraform-aws-stackx-worker
+  <br />
+  <a href="#about"><strong>Explore the diagrams »</strong></a>
+  <br />
+  <br />
+  <a href="https://github.com/ventx/terraform-aws-stackx-worker/issues/new?assignees=&labels=bug&template=01_BUG_REPORT.md&title=bug%3A+">Report a Bug</a>
+  ·
+  <a href="https://github.com/ventx/terraform-aws-stackx-worker/issues/new?assignees=&labels=enhancement&template=02_FEATURE_REQUEST.md&title=feat%3A+">Request a Feature</a>
+  ·
+  <a href="https://github.com/ventx/terraform-aws-stackx-worker/issues/new?assignees=&labels=question&template=04_SUPPORT_QUESTION.md&title=support%3A+">Ask a Question</a>
+</div>
 
-This repo will be synced with the
-[AndreasAugustin/actions-template-sync](https://github.com/AndreasAugustin/actions-template-sync) GitHub Action.
+<div align="center">
+<br />
+
+[![Project license](https://img.shields.io/github/license/ventx/terraform-aws-stackx-worker.svg?style=flat-square)](LICENSE)
+
+[![Pull Requests welcome](https://img.shields.io/badge/PRs-welcome-ff69b4.svg?style=flat-square)](https://github.com/ventx/terraform-aws-stackx-worker/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
+[![code with love by ventx](https://img.shields.io/badge/%3C%2F%3E%20with%20♥%20by-ventx-blue)](https://github.com/ventx)
+
+</div>
+
+<details open>
+<summary>Table of Contents</summary>
+
+- [About](#about)
+  - [Built With](#built-with)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Quickstart](#quickstart)
+- [Usage](#usage)
+- [Support](#support)
+- [Project assistance](#project-assistance)
+- [Contributing](#contributing)
+- [Authors & contributors](#authors--contributors)
+- [Security](#security)
+- [License](#license)
+- [Acknowledgements](#acknowledgements)
+- [Roadmap](#roadmap)
+
+</details>
+
+---
+
+## About
+
+> Minimal Terraform AWS EKS (K8s) Worker nodes module.
+> Creates simple EKS Managed Node Groups which will be used for stackx or other gitOps components.
+> Uses the optimized and hardened AWS Bottlerocket OS and supports regular x86_64 and ARM_64 architectures.
+> Spot or On-Demand instances can be used but for stackx components ondemand is recommended. -- Part of stackx.
 
 
-## Requirements
-
-### Secrets
-During setup of the new GitHub repository, set these [Secrets for GitHub Actions](https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository):
-
-* `INFRACOST_API_KEY` ([Infracost](https://www.infracost.io))
-* `LOCALSTACK_API_KEY` ([LocalStack](https://localstack.cloud))
-* `PERSONAL_ACCESS_TOKEN` (GitHub Personal Access Token with `workflow` scope)
-
-> For modules without LocalStack support, please set `LOCALSTACK_API_KEY` 
-> to `false`
+<details>
+<summary>ℹ️ Architecture Diagrams</summary>
+<br>
 
 
-### Diagrams
+|                                Placeholder                                 |                                                            Rover                                                            |
+|:-------------------------------------------------------------------------------:|:---------------------------------------------------------------------------------------------------------------------------------------:|
+| <img src="https://raw.githubusercontent.com/ventx/terraform-aws-stackx-worker/main/docs/images/screenshot1.png" title="Placeholder" width="100%"> | <img src="https://raw.githubusercontent.com/ventx/terraform-aws-stackx-worker/main/docs/images/screenshot2.png" title="Rover" width="100%"> |
 
-Add a `diagram.py` in `docs/images` to automatically generate a 
-[diagram as code](https://diagrams.mingrammer.com).
+</details>
 
-The required syntax (replace `repository-name` accordingly:
 
-```python
-with Diagram("repository-name", outformat="png", filename="screenshot1", show=False):
+### Built With
+
+<no value>
+
+
+## Getting Started
+
+### Prerequisites
+
+
+* AWS credentials
+* Terraform
+* [VPC network and subnets](https://github.com/ventx/stackx-terraform-aws-network)
+* [EKS Cluster](https://github.com/ventx/stackx-terraform-aws-cluster)
+
+### Quickstart
+
+To get started, clone the projects, check all configurable [Inputs](#inputs) and deploy everything with `make`.
+
+```shell
+git clone https://github.com/ventx/stackx-terraform-aws-worker.git
+make all # init, validate, plan, apply
 ```
 
 
-### README
 
-Create a `README.yaml` in the `docs/` subdirectory, which will be used in the 
-[stackx-action-readme-templates](https://github.com/ventx/stackx-action-readme-templates) 
-GitHub Action to generate the final README.md file.
+## Usage
 
 
-### Pull Request Labels
+You can run this module in conjunction with other stackx components (recommended) or as single-use (build your own).
 
-Add the following labels to your repository if they are not already there:
+Deployment time around: 10 minutes (with network, cluster, worker)
+```shell
+  make apply 5.81s user 1.12s system 1% cpu 9:57.41 total
+```
 
-* `chore`
-* `template-sync`
+### stackx (RECOMMENDED)
+
+This is just a bare minimum example of how to use the module.
+See all available stackx modules here: https://github.com/ventx
+
+
+```hcl
+  module "aws-network" {
+    source = "ventx/stackx-network/aws"
+  }
+
+  module "aws-cluster" {
+    source          = "ventx/stackx-cluster/aws"
+    cluster_version = "1.27"
+    subnet_ids      = module.aws_network.private_subnet_ids
+  }
+
+  module "aws-worker" {
+    source          = "ventx/stackx-worker/aws"
+    version         = "0.1.0" // Pinned and tested version, generated by {x-release-please-version}
+    cluster_name    = module.stackx-cluster.cluster_name
+    cluster_version = module.stackx-cluster.cluster_version
+    subnet_ids      = module.stackx-network.private_subnet_ids
+    vpc_id          = module.stackx-cluster.vpc_id
+  }
+```
+
+### Single-Use
+
+```hcl
+  module "aws-worker" {
+    source = "ventx/stackx-worker/aws"
+    version     = "0.1.0" // Pinned and tested version, generated by {x-release-please-version}
+    cluster_name    = "existing-eks-cluster
+    cluster_version = "1.27"
+    subnet_ids      = ["subnet-1", "subnet-2", "subnet-3"]
+    vpc_id          = "vpc-123456789"
+  }
+```
+
+
+
+
+## Terraform
+
+
+
+### Features
+
+
+* Simple and easy to use, just the bare minimum
+* Uses Bottlerocket AMI for optimized and hardened OS
+* Supports x86_64 and ARM_64 architectures
+* Supports NVIDIA GPU
+
+### Resources
+
+
+* EKS Node Group
+* IAM OIDC provider
+* IAM Roles
+* SSM Session Manager
+* map[OPTIONAL:SSH access]
+
+### Opinions
+
+Our Terraform modules are are highly opionated:
+
+* Keep modules small, focused, simple and easy to understand
+* Prefer simple code over complex code
+* Prefer [KISS](https://en.wikipedia.org/wiki/KISS_principle) > [DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself)
+* Set some sane default values for variables, but do not set a default value if user input is strictly required
+
+
+These opinions can be seen as some _"soft"_ rules but which are not strictly required.
+
+<!-- BEGIN_TF_DOCS -->
+## Requirements
+
+| Name | Version |
+|------|---------|
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0.0 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 3.45.0 |
+| <a name="requirement_http"></a> [http](#requirement\_http) | >= 3.4.0 |
+
+## Providers
+
+| Name | Version |
+|------|---------|
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 5.22.0 |
+| <a name="provider_http"></a> [http](#provider\_http) | 3.4.0 |
+| <a name="provider_random"></a> [random](#provider\_random) | 3.5.1 |
+| <a name="provider_tls"></a> [tls](#provider\_tls) | 4.0.4 |
+
+## Modules
+
+No modules.
+
+## Resources
+
+| Name | Type |
+|------|------|
+| [aws_autoscaling_group_tag.stateless](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_group_tag) | resource |
+| [aws_eks_node_group.worker](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_node_group) | resource |
+| [aws_iam_instance_profile.eks_worker](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_instance_profile) | resource |
+| [aws_iam_role.eks_worker](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
+| [aws_iam_role_policy_attachment.attach](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_key_pair.ssh](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/key_pair) | resource |
+| [aws_secretsmanager_secret.ssh_private](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/secretsmanager_secret) | resource |
+| [aws_secretsmanager_secret.ssh_public](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/secretsmanager_secret) | resource |
+| [aws_secretsmanager_secret_version.ssh_private](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/secretsmanager_secret_version) | resource |
+| [aws_secretsmanager_secret_version.ssh_public](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/secretsmanager_secret_version) | resource |
+| [aws_security_group.ssh](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
+| [aws_security_group_rule.current_ipv4](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
+| [aws_ssm_parameter.ssh_private](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ssm_parameter) | resource |
+| [aws_ssm_parameter.ssh_pub](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ssm_parameter) | resource |
+| [random_string.random_name](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/string) | resource |
+| [tls_private_key.ssh](https://registry.terraform.io/providers/hashicorp/tls/latest/docs/resources/private_key) | resource |
+| [aws_iam_policy_document.tr](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
+| [aws_partition.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/partition) | data source |
+| [aws_ssm_parameter.eks_ami_release_version](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ssm_parameter) | data source |
+| [http_http.current_ipv4](https://registry.terraform.io/providers/hashicorp/http/latest/docs/data-sources/http) | data source |
+
+## Inputs
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| <a name="input_arch"></a> [arch](#input\_arch) | CPU architecture to use for managed node groups (valid: `x86_64`, `ARM_64`) | `string` | `"x86_64"` | no |
+| <a name="input_asg_tags"></a> [asg\_tags](#input\_asg\_tags) | Add additional tags to the EKS Managed Node Group created AutoScalingGroup (in addition to the default cluster-autoscaler capacityType tag) | `map(string)` | `{}` | no |
+| <a name="input_aws_key_name"></a> [aws\_key\_name](#input\_aws\_key\_name) | Name of an existing AWS Key Pair name for SSH access to EKS Worker nodes - Leave empty to create new Key Pair | `string` | `""` | no |
+| <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | EKS Cluster name | `string` | `"stackx"` | no |
+| <a name="input_cluster_version"></a> [cluster\_version](#input\_cluster\_version) | EKS Cluster version | `string` | `"1.27"` | no |
+| <a name="input_desired_size"></a> [desired\_size](#input\_desired\_size) | Number of desired AWS EKS Worker nodes - Managed Node Group. Will be IGNORED after initial deployment | `number` | `3` | no |
+| <a name="input_disk_size"></a> [disk\_size](#input\_disk\_size) | EBS disk size in GiB for AWS EKS Worker nodes. | `number` | `80` | no |
+| <a name="input_force_update_version"></a> [force\_update\_version](#input\_force\_update\_version) | Force update of the version of the Managed Node Group even if PodDisruptionBudgets (PDB) are halting the drain process. | `bool` | `false` | no |
+| <a name="input_gpu_ami"></a> [gpu\_ami](#input\_gpu\_ami) | Enable / Disable the use of the Bottlerocket AMI for GPU workloads | `bool` | `false` | no |
+| <a name="input_instance_types"></a> [instance\_types](#input\_instance\_types) | List of EC2 Instance types of AWS EKS - Managed Node Group for stateless applications (e.g. `[t3a.large]`) | `list(string)` | <pre>[<br>  "c5a.xlarge",<br>  "c6a.xlarge"<br>]</pre> | no |
+| <a name="input_key_storage"></a> [key\_storage](#input\_key\_storage) | The AWS service to use to storage the generated SSH Public/Private Key pair for Worker node access | `string` | `"ssm"` | no |
+| <a name="input_labels"></a> [labels](#input\_labels) | Labels to add to the EKS Worker nodes | `map(string)` | <pre>{<br>  "app": "stackx"<br>}</pre> | no |
+| <a name="input_list_policies_arns"></a> [list\_policies\_arns](#input\_list\_policies\_arns) | List of additional policy ARNs to attach to EKS Worker Instance Profile role (max. 10) | `list(string)` | `[]` | no |
+| <a name="input_max_size"></a> [max\_size](#input\_max\_size) | Maximum of AWS EKS Worker nodes - Managed Node Group Stateless (maximum capacity for ASG, e.g. `8`) | `number` | `3` | no |
+| <a name="input_min_size"></a> [min\_size](#input\_min\_size) | Minimum of AWS EKS Worker nodes - Managed Node Group Stateless (minimum capacity for ASG, e.g. `8`) | `number` | `3` | no |
+| <a name="input_name"></a> [name](#input\_name) | Base Name for all resources (preferably generated by terraform-null-label) | `string` | `"stackx-worker"` | no |
+| <a name="input_node_role_arn"></a> [node\_role\_arn](#input\_node\_role\_arn) | IAM Role for workers | `string` | `null` | no |
+| <a name="input_recovery_window_in_days"></a> [recovery\_window\_in\_days](#input\_recovery\_window\_in\_days) | Secrets manager recovery window for SSH Public and Private Key for EKS Worker nodes | `number` | `7` | no |
+| <a name="input_release_version"></a> [release\_version](#input\_release\_version) | EKS AMI release version (get from AWS SSM, eg. `/aws/service/bottlerocket/aws-k8s-1.27/x86_64/latest/image_version`) | `string` | `null` | no |
+| <a name="input_spot"></a> [spot](#input\_spot) | Enable / Disable EC2 spot instances (`true` or `false`) | `bool` | `false` | no |
+| <a name="input_ssh_allow_workstation"></a> [ssh\_allow\_workstation](#input\_ssh\_allow\_workstation) | Allow your workstation IPv4 address access via SSH to EKS Worker nodes (`var.ssh_allowed_sg_ids` must be an empty list and `var.vpc_id` must be set | `bool` | `true` | no |
+| <a name="input_ssh_allowed_sg_ids"></a> [ssh\_allowed\_sg\_ids](#input\_ssh\_allowed\_sg\_ids) | List of source Security Group IDs to be allowed for SSH acess to EKS Worker nodes | `list(string)` | `[]` | no |
+| <a name="input_subnet_ids"></a> [subnet\_ids](#input\_subnet\_ids) | Subnet IDs where to create workers into | `list(string)` | n/a | yes |
+| <a name="input_tags"></a> [tags](#input\_tags) | User specific Tags to attach to resources (will be merged with module tags) | `map(string)` | `{}` | no |
+| <a name="input_taints"></a> [taints](#input\_taints) | List of taints to add to the EKS Worker nodes (e.g. `{key = "test", value = "example", effect = "NoSchedule"}`) | `list(map(string))` | <pre>[<br>  {}<br>]</pre> | no |
+| <a name="input_tf_eks_node_group_timeouts"></a> [tf\_eks\_node\_group\_timeouts](#input\_tf\_eks\_node\_group\_timeouts) | (Optional) Updated Terraform resource management timeouts. Applies to `aws_eks_node_group` in particular to permit resource management times | `map(string)` | <pre>{<br>  "create": "40m",<br>  "delete": "40m",<br>  "update": "60m"<br>}</pre> | no |
+| <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | VPC ID of EKS to create SecurityGroup for SSH access (optional) | `string` | `""` | no |
+
+## Outputs
+
+| Name | Description |
+|------|-------------|
+| <a name="output_cluster_name"></a> [cluster\_name](#output\_cluster\_name) | n/a |
+| <a name="output_node_group_arn"></a> [node\_group\_arn](#output\_node\_group\_arn) | n/a |
+| <a name="output_node_group_asg_name"></a> [node\_group\_asg\_name](#output\_node\_group\_asg\_name) | n/a |
+| <a name="output_node_group_role_arn"></a> [node\_group\_role\_arn](#output\_node\_group\_role\_arn) | EKS Worker Managed Node Group IAM Role ARN |
+| <a name="output_node_group_role_name"></a> [node\_group\_role\_name](#output\_node\_group\_role\_name) | EKS Worker Managed Node Group IAM Role Name |
+| <a name="output_node_group_ssh_security_group_id"></a> [node\_group\_ssh\_security\_group\_id](#output\_node\_group\_ssh\_security\_group\_id) | n/a |
+| <a name="output_node_group_subnet_ids"></a> [node\_group\_subnet\_ids](#output\_node\_group\_subnet\_ids) | EKS Worker Managed Node Group Subnet IDs |
+| <a name="output_release_version"></a> [release\_version](#output\_release\_version) | EKS Managed Node Group release version |
+<!-- END_TF_DOCS -->
+
+
+
+## Support
+
+If you need professional support directly by the maintainers of the project, don't hesitate to contact us:
+<a href="https://www.ventx.de/kontakt.html">
+  <img align="center" src="https://i.imgur.com/OoCRUwz.png" alt="ventx Contact Us Kontakt" />
+</a>
+
+- [GitHub issues](https://github.com/ventx/terraform-aws-stackx-worker/issues/new?assignees=&labels=question&template=04_SUPPORT_QUESTION.md&title=support%3A+)
+- Contact options listed on [this GitHub profile](https://github.com/hajowieland)
+
+
+## Project assistance
+
+If you want to say **thank you** or/and support active development of terraform-aws-stackx-worker:
+
+- Add a [GitHub Star](https://github.com/ventx/terraform-aws-stackx-worker) to the project.
+- Tweet about the terraform-aws-stackx-worker.
+- Write interesting articles about the project on [Dev.to](https://dev.to/), [Medium](https://medium.com/) or your personal blog.
+
+Together, we can make terraform-aws-stackx-worker **better**!
+
+
+
+
+## Contributing
+
+First off, thanks for taking the time to contribute! Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make will benefit everybody else and are **greatly appreciated**.
+
+Please read [our contribution guidelines](.github/CONTRIBUTING.md), and thank you for being involved!
+
+
+## Security
+
+terraform-aws-stackx-worker follows good practices of security, but 100% security cannot be assured.
+terraform-aws-stackx-worker is provided **"as is"** without any **warranty**. Use at your own risk.
+
+_For more information and to report security issues, please refer to our [security documentation](.github/SECURITY.md)._
+
+
+## License
+
+This project is licensed under the **Apache 2.0 license**.
+
+See [LICENSE](LICENSE) for more information.
+
+
+## Acknowledgements
+
+* All open source contributors who made this possible
+
+
+## Roadmap
+
+See the [open issues](https://github.com/ventx/terraform-aws-stackx-worker/issues) for a list of proposed features (and known issues).
+
+- [Top Feature Requests](https://github.com/ventx/terraform-aws-stackx-worker/issues?q=label%3Aenhancement+is%3Aopen+sort%3Areactions-%2B1-desc) (Add your votes using the 👍 reaction)
+- [Top Bugs](https://github.com/ventx/terraform-aws-stackx-worker/issues?q=is%3Aissue+is%3Aopen+label%3Abug+sort%3Areactions-%2B1-desc) (Add your votes using the 👍 reaction)
+- [Newest Bugs](https://github.com/ventx/terraform-aws-stackx-worker/issues?q=is%3Aopen+is%3Aissue+label%3Abug)
+
+
