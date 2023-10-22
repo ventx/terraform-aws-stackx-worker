@@ -1,21 +1,18 @@
 from diagrams import Cluster, Diagram
-from diagrams.aws.compute import ElasticKubernetesService
+from diagrams.aws.compute import ElasticKubernetesService, EC2
+from diagrams.aws.compute import Fargate
 from diagrams.aws.security import KeyManagementService
 from diagrams.aws.security import IdentityAndAccessManagementIam
 from diagrams.aws.security import IdentityAndAccessManagementIamRole
-from diagrams.aws.management import Cloudwatch
+
 
 
 with Diagram("terraform-aws-stackx-worker", outformat="png", filename="screenshot1", show=False):
-    with Cluster("EKS"):
+  with Cluster("EKS"):
 
-      eks = ElasticKubernetesService("EKS")
-      kms = KeyManagementService("Secrets Encryption")
-      iam = IdentityAndAccessManagementIam("IAM")
+          eks = ElasticKubernetesService("EKS")
+          fg = Fargate("Fargate Profile")
 
-      iam_group = [
-        IdentityAndAccessManagementIam("IAM") >> IdentityAndAccessManagementIam("OIDC Provider"),
-        IdentityAndAccessManagementIamRole("Cluster Role")
-      ]
-      cloudwatch = Cloudwatch("Control-Plane Logs")
-      eks >> [kms, cloudwatch, iam_group]
+          with Cluster("Worker Nodes"):
+              worker_nodes = EC2("Worker Nodes")  # Representing Worker Nodes using EC2 service
+              eks >> worker_nodes  # Connecting EKS to Worker Nodes
