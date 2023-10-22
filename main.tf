@@ -44,8 +44,8 @@ resource "aws_eks_node_group" "worker" {
   instance_types       = flatten([var.instance_types])
   node_role_arn        = var.node_role_arn == null ? aws_iam_role.eks_worker.0.arn : var.node_role_arn
   subnet_ids           = var.subnet_ids
-  release_version      = var.release_version
-  version              = var.cluster_version
+  #release_version      = var.release_version == null ? nonsensitive(data.aws_ssm_parameter.eks_ami_release_version.value) : var.release_version
+  version = var.cluster_version
 
   labels = {
     "apps" = var.name,
@@ -61,7 +61,7 @@ resource "aws_eks_node_group" "worker" {
 
   remote_access {
     ec2_ssh_key               = var.aws_key_name != "" ? var.aws_key_name : aws_key_pair.ssh.0.key_name
-    source_security_group_ids = flatten([length(var.ssh_security_group_ids) != 0 ? var.ssh_security_group_ids : [aws_security_group.ssh.0.id]])
+    source_security_group_ids = flatten([length(var.ssh_allowed_sg_ids) != 0 ? var.ssh_allowed_sg_ids : [aws_security_group.ssh.0.id]])
   }
 
   scaling_config {
@@ -70,7 +70,7 @@ resource "aws_eks_node_group" "worker" {
     min_size     = var.min_size
   }
 
-  tags_all = local.tags
+  tags = local.tags
 
   timeouts {
     create = lookup(var.tf_eks_node_group_timeouts, "create", null)

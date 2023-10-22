@@ -30,12 +30,6 @@ variable "taints" {
   default     = [{}]
 }
 
-variable "static_unique_id" {
-  description = "Static unique ID, defined in the root module once, to be suffixed to all resources for uniqueness (if you choose uuid, some resources will be cut of at max length - empty means NO / disable unique suffix)"
-  type        = string
-  default     = ""
-}
-
 variable "arch" {
   description = "CPU architecture to use for managed node groups (valid: `x86_64`, `ARM_64`)"
   type        = string
@@ -58,8 +52,30 @@ variable "aws_key_name" {
   default     = ""
 }
 
-variable "ssh_security_group_ids" {
-  description = "List of Security Group IDs to be allowed for SSH acess to EKS Worker nodes"
+variable "key_storage" {
+  description = "The AWS service to use to storage the generated SSH Public/Private Key pair for Worker node access"
+  type        = string
+  default     = "ssm"
+  validation {
+    condition     = contains(["ssm", "secretsmanager"], var.key_storage)
+    error_message = "The selected key storage is not valid - please choose one of: `ssm`, `secretsmanager`."
+  }
+}
+
+variable "ssh_allow_workstation" {
+  description = "Allow your workstation IPv4 address access via SSH to EKS Worker nodes (`var.ssh_allowed_sg_ids` must be an empty list and `var.vpc_id` must be set"
+  type        = bool
+  default     = true
+}
+
+variable "vpc_id" {
+  description = "VPC ID of EKS to create SecurityGroup for SSH access (optional)"
+  type        = string
+  default     = ""
+}
+
+variable "ssh_allowed_sg_ids" {
+  description = "List of source Security Group IDs to be allowed for SSH acess to EKS Worker nodes"
   type        = list(string)
   default     = []
 }
@@ -77,7 +93,7 @@ variable "list_policies_arns" {
 variable "instance_types" {
   description = "List of EC2 Instance types of AWS EKS - Managed Node Group for stateless applications (e.g. `[t3a.large]`)"
   type        = list(string)
-  default     = ["c5a.2xlarge", "c6a.2xlarge"]
+  default     = ["c5a.xlarge", "c6a.xlarge"]
 }
 
 variable "desired_size" {
@@ -117,17 +133,25 @@ variable "tf_eks_node_group_timeouts" {
 variable "cluster_name" {
   description = "EKS Cluster name"
   type        = string
+  default     = "stackx"
 }
 
 variable "cluster_version" {
   description = "EKS Cluster version"
   type        = string
+  default     = "1.27"
 }
 
 variable "release_version" {
-  description = "EKS AMI release version (get from AWS SSM `/aws/service/eks/optimized-ami/1.20/amazon-linux-2/recommended`)"
+  description = "EKS AMI release version (get from AWS SSM, eg. `/aws/service/bottlerocket/aws-k8s-1.27/x86_64/latest/image_version`)"
   type        = string
   default     = null
+}
+
+variable "gpu_ami" {
+  description = "Enable / Disable the use of the Bottlerocket AMI for GPU workloads"
+  type        = bool
+  default     = false
 }
 
 variable "node_role_arn" {
@@ -145,12 +169,6 @@ variable "spot" {
   description = "Enable / Disable EC2 spot instances (`true` or `false`)"
   type        = bool
   default     = false
-}
-
-variable "vpc_id" {
-  description = "VPC ID of EKS to create SecurityGroup for SSH access (optional)"
-  type        = string
-  default     = ""
 }
 
 variable "recovery_window_in_days" {

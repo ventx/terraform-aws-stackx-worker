@@ -27,3 +27,8 @@ output "oidc_issuer" {
   description = "Issuer URL of EKS Cluster OIDC"
   value       = module.stackx-cluster.oidc_issuer
 }
+
+output "release_version" {
+  description = "EKS Node Group release version"
+  value       = module.stackx-worker.release_version
+}

@@ -17,7 +17,7 @@ resource "aws_iam_role" "eks_worker" {
   count = var.node_role_arn == null ? 1 : 0
 
   // expected length of name to be in the range (1 - 64)
-  name                  = substr(lower("eks-worker-${var.name}-${random_string.random_name.result}${var.static_unique_id != "" ? "-" : ""}${var.static_unique_id != "" ? var.static_unique_id : ""}"), 0, 63)
+  name                  = substr(lower("${var.cluster_name}-eks-worker-${var.name}-${random_string.random_name.result}"), 0, 63)
   assume_role_policy    = data.aws_iam_policy_document.tr.0.json
   force_detach_policies = true
 
@@ -30,7 +30,7 @@ resource "aws_iam_instance_profile" "eks_worker" {
   # https://docs.aws.amazon.com/IAM/latest/APIReference/API_InstanceProfile.html
   # Minimum length of 1.
   # Maximum length of 128.
-  name = substr(lower("eks-worker-${var.name}-${random_string.random_name.result}${var.static_unique_id != "" ? "-" : ""}${var.static_unique_id != "" ? var.static_unique_id : ""}"), 0, 127)
+  name = substr(lower("${var.cluster_name}-eks-worker-${var.name}-${random_string.random_name.result}"), 0, 127)
   role = aws_iam_role.eks_worker.0.name
 
   tags = local.tags
